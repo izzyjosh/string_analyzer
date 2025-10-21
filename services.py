@@ -8,9 +8,34 @@ from database import get_db
 from fastapi import Depends, HTTPException, status
 from fastapi.encoders import jsonable_encoder
 from models import WordFeature
+from typing import List, Dict
 
 class AnalyzerService:
+
+    def __init__(self):
+        # Define patterns and their corresponding filters
+        self.rules = [
+            {
+                "match": "all single word palindromic strings",
+                "filters": {"word_count": 1, "is_palindrome": True},
+            },
+            {
+                "match": "strings longer than 10 characters",
+                "filters": {"min_length": 11},
+            },
+            {
+                "match": "palindromic strings that contain the first vowel",
+                "filters": {"is_palindrome": True, "contains_character": "a"},
+            },
+            {
+                "match": "strings containing the letter z",
+                "filters": {"contains_character": "z"},
+            },
+        ]
+
+
     def analyze(self, data: AnalyzeSchema, db: Session):
+
         phrase = data.value
 
         existing = db.scalars(select(WordFeature).where(WordFeature.phrase == phrase)).first()
@@ -65,7 +90,6 @@ class AnalyzerService:
         if filters.contains_character is not None:
             conditions.append(WordFeature.phrase.ilike(f"%{filters.contains_character}%"))
 
-
         if conditions:
             stmt = stmt.where(*conditions)
 
@@ -99,5 +123,92 @@ class AnalyzerService:
                 }
 
         return response
+
+
+    def parse_query(self, query: str) -> Dict:
+        query = query.lower().strip()
+
+        for rule in self.rules:
+            if rule["match"] in query:
+                return {
+                    "original": query,
+                    "parsed_filters": rule["filters"]
+                }
+
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"Unable to interpret natural language query: '{query}'",
+        )
+
+
+    # -----------------------------------
+    # Apply filters on list of strings
+    # -----------------------------------
+    def filter_strings(self, strings: List[str], filters: Dict) -> List[str]:
+        result = strings
+
+        if filters.get("word_count") is not None:
+            result = [s for s in result if len(s.split()) == filters["word_count"]]
+
+        if filters.get("is_palindrome"):
+            result = [s for s in result if palindrom(s)]
+
+        if filters.get("min_length") is not None:
+            result = [s for s in result if len(s) >= filters["min_length"]]
+
+        if filters.get("contains_character"):
+            ch = filters["contains_character"].lower()
+            result = [s for s in result if ch in s.lower()]
+
+        return result
+
+    # -----------------------------------
+    # Combine both steps
+    # -----------------------------------
+    def natural_query(self, db: Session, query: str | None):
+
+        if query is None:
+            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="No query parsed")
+
+        word_features = db.scalars(select(WordFeature)).all()
+        words = [w.phrase for w in word_features]
+
+        try:
+            interpreted = self.parse_query(query)
+            filters = interpreted["parsed_filters"]
+
+            filtered_strings = self.filter_strings(words, filters)
+
+            if not filtered_strings:
+                raise HTTPException(
+                    status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
+                    detail="Query parsed correctly but no results matched.",
+                )
+
+            return {
+                "count": len(filtered_strings),
+                "data": filtered_strings,
+                "interpreted_query": interpreted,
+            }
+
+        except HTTPException:
+            raise
+        except Exception as e:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=f"Error while parsing query: {str(e)}",
+            )
+
+
+    def delete(self, id: str, db: Session):
+        word_feature = db.scalars(select(WordFeature).where(WordFeature.phrase == id)).first()
+
+        if not word_feature:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Does not exist")
+
+        db.delete(word_feature)
+        db.commit()
+
+        return {"message": "No content"}
 
 analyzer_service = AnalyzerService()

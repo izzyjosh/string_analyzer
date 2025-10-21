@@ -1,5 +1,5 @@
 from typing import Annotated
-from fastapi import Depends, FastAPI
+from fastapi import Depends, FastAPI, status
 from sqlalchemy.orm import Session
 import uvicorn
 from dotenv import load_dotenv
@@ -9,7 +9,9 @@ from schema import AnalyzeSchema, StringFilters
 from services import analyzer_service
 from database import get_db
 
+
 load_dotenv()
+
 
 app = FastAPI(title="String analyzer service")
 
@@ -24,6 +26,15 @@ async def analyze(data: AnalyzeSchema, db: Annotated[Session, Depends(get_db)]):
 
     return response
 
+
+@app.get("/strings/filter-by-natural-language")
+async def filter_by_natural_language(query: str | None, db: Annotated[Session, Depends(get_db)]):
+
+    response = analyzer_service.natural_query(query=query, db=db)
+
+    return response
+
+
 @app.get("/strings/{string_value}")
 async def fetch_one(string_value: str, db: Annotated[Session, Depends(get_db)]):
     
@@ -31,10 +42,19 @@ async def fetch_one(string_value: str, db: Annotated[Session, Depends(get_db)]):
 
     return response
 
+
 @app.get("/strings")
 async def fetch_all(filters: Annotated[StringFilters, Depends()], db: Annotated[Session, Depends(get_db)]):
     
     response = analyzer_service.get_all(filters=filters, db=db)
+
+    return response
+
+
+@app.delete("/strings/{value}", status_code=status.HTTP_204_NO_CONTENT)
+async def delete(value: str, db: Annotated[Session, Depends(get_db)]):
+
+    response = analyzer_service.delete(id=value, db=db)
 
     return response
 
