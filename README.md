@@ -26,7 +26,7 @@ A Fastapi application that stores strings and some of its properties. The projec
  ### 1. Clone the Repository
  ```bash
  git clone https://github.com/izzyjosh/string_analyzer.git
- cd cat-fact-api
+ cd string_analyzer
  ```
 
  ### 2. Create a virtual environment
