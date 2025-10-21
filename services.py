@@ -36,7 +36,7 @@ class AnalyzerService:
 
     def analyze(self, data: AnalyzeSchema, db: Session):
 
-        phrase = data.value
+        phrase = data.value.strip()
 
         existing = db.scalars(select(WordFeature).where(WordFeature.phrase == phrase)).first()
 
@@ -66,7 +66,7 @@ class AnalyzerService:
         word_feature = db.scalars(select(WordFeature).where(WordFeature.phrase == id)).first()
 
         if not word_feature:
-            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Does not exist")
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Does not exist")
 
         response = self.analyzer_response(word_feature)
 
