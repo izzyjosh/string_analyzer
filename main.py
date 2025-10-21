@@ -77,7 +77,7 @@ async def analyze(data: AnalyzeSchema, db: Annotated[Session, Depends(get_db)]):
 
     response = analyzer_service.analyze(data=data, db=db)
 
-    return success_response(status_code=status.HTTP_201_CREATED, message="created successfully", data=response)
+    return success_response(status_code=status.HTTP_201_CREATED, data=response)
 
 
 @app.get("/strings/filter-by-natural-language")
@@ -85,7 +85,7 @@ async def filter_by_natural_language(query: str | None, db: Annotated[Session, D
 
     response = analyzer_service.natural_query(query=query, db=db)
 
-    return response
+    return success_response(status_code=status.HTTP_200_OK, data=response)
 
 
 @app.get("/strings/{string_value}")
@@ -93,7 +93,7 @@ async def fetch_one(string_value: str, db: Annotated[Session, Depends(get_db)]):
     
     response = analyzer_service.get_one(id=string_value, db=db)
 
-    return success_response(status_code=status.HTTP_200_OK, message="Successfull", data=response)
+    return success_response(status_code=status.HTTP_200_OK, data=response)
 
 
 @app.get("/strings")
@@ -101,7 +101,7 @@ async def fetch_all(filters: Annotated[StringFilters, Depends()], db: Annotated[
     
     response = analyzer_service.get_all(filters=filters, db=db)
 
-    return success_response(status_code=status.HTTP_200_OK, message="Successfull", data=response)
+    return success_response(status_code=status.HTTP_200_OK, data=response)
 
 
 @app.delete("/strings/{value}", status_code=status.HTTP_204_NO_CONTENT)

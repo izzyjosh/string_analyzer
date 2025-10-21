@@ -15,14 +15,11 @@ class ErrorResponse(BaseModel):
     message: str
 
 
-def success_response( message: str, status_code: int = status.HTTP_200_OK, data: Optional[dict] = None) -> JSONResponse:
+def success_response(status_code: int = status.HTTP_200_OK, data: Optional[dict] = None) -> JSONResponse:
 
-    response = {
-            "status_code": status_code,
-            "message": message
-    }
+    response = {}
 
     if data is not None:
-        response["data"] = data
+        response = data
 
     return JSONResponse(status_code=status_code, content=jsonable_encoder(response))
