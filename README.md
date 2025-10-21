@@ -41,5 +41,5 @@ A Fastapi application that stores strings and some of its properties. The projec
 ```
 ### 4. Finally, run the project using
  ```
-python app.py
+python main.py
 ```
