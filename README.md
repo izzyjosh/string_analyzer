@@ -25,7 +25,7 @@ A Fastapi application that stores strings and some of its properties. The projec
 
  ### 1. Clone the Repository
  ```bash
- git clone https://github.com/izzyjosh/hng-zero.git
+ git clone https://github.com/izzyjosh/string_analyzer.git
  cd cat-fact-api
  ```
 
